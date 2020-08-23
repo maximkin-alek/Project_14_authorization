@@ -1,3 +1,5 @@
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const User = require('../models/user');
 
 module.exports.getUsers = (req, res) => {
@@ -17,15 +19,23 @@ module.exports.getUser = (req, res) => {
       } else { res.status(500).send({ message: 'Ошибка сервера' }); }
     });
 };
-module.exports.addUser = (req, res) => {
-  const { name, about, avatar } = req.body;
-  User.create({ name, about, avatar })
-    .then((user) => res.send({ data: user }))
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
-        res.status(400).send({ message: `Данные не валидны: ${err.message}` });
-      } else { res.status(500).send({ message: 'Ошибка сервера' }); }
-    });
+module.exports.createUser = (req, res) => {
+  const {
+    name, about, avatar, email,
+  } = req.body;
+  bcrypt.hash(req.body.password, 10)
+    .then((hash) => {
+      User.create({
+        name, about, avatar, email, password: hash,
+      })
+        .then((user) => res.send({ data: user }))
+        .catch((err) => {
+          if (err.name === 'ValidationError') {
+            res.status(400).send({ message: `Данные не валидны: ${err.message}` });
+          } else { res.status(500).send({ message: 'Ошибка сервера' }); }
+        });
+    })
+    .catch((err) => { res.status(500).send({ message: err.message }); });
 };
 
 module.exports.updateUserProfile = (req, res) => {
@@ -65,5 +75,19 @@ module.exports.updateUserAvatar = (req, res) => {
       } else if (err.name === 'CastError') {
         res.status(400).send({ message: 'Некорректный Id' });
       } else { res.status(500).send({ message: 'Ошибка сервера' }); }
+    });
+};
+
+module.exports.login = (req, res) => {
+  const { email, password } = req.body;
+  return this.updateUserProfile.findUser(email, password)
+    .then((user) => {
+      const token = jwt.sign({ _id: user._id }, 'a2ee16c5379c1de2f488b7dfff5544c20f8c0606893e7370f5d766d5e37659c9', { expiresIn: '7d' });
+      res.send({ token });
+    })
+    .catch((err) => {
+      res
+        .status(401)
+        .send({ message: err.message });
     });
 };

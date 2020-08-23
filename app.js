@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const cardsRouter = require('./routes/cards');
 const userRouter = require('./routes/users');
+const { login, createUser } = require('./controllers/users');
 
 mongoose.connect('mongodb://localhost:27017/mestodb', {
   useNewUrlParser: true,
@@ -22,6 +23,8 @@ app.use((req, res, next) => {
 
   next();
 });
+app.post('/signin', login);
+app.post('/signup', createUser);
 app.use('/cards', cardsRouter);
 app.use('/users', userRouter);
 app.use((req, res) => {
