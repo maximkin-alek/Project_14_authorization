@@ -25,12 +25,15 @@ module.exports.createCard = (req, res) => {
 module.exports.deleteCard = (req, res) => {
   Card.findById(req.params.id)
     .orFail(() => { })
+    .populate('owner')
     .then((card) => {
-      card.remove()
-        .then(() => {
-          res.send({ data: card });
-        })
-        .catch(() => res.status(500).send({ message: 'Ошибка сервера' }));
+      if (card.owner.id === req.user._id) {
+        card.remove()
+          .then(() => {
+            res.send({ data: card });
+          })
+          .catch(() => res.status(500).send({ message: 'Ошибка сервера' }));
+      } else { res.status(401).send({ message: 'Недостаточно прав для этого действия' }); }
     })
     .catch((err) => {
       if (err.name === 'DocumentNotFoundError') {
