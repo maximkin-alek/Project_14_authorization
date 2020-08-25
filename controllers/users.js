@@ -46,7 +46,13 @@ module.exports.updateUserProfile = (req, res) => {
     upsert: false,
   })
     .orFail(() => { })
-    .then((user) => res.send({ data: user }))
+    .then((user) => {
+      if (user.id === req.user._id) {
+        res.send({ data: user });
+      } else {
+        res.status(400).send({ message: 'Недостаточно прав для этого действия' });
+      }
+    })
     .catch((err) => {
       if (err.name === 'ValidationError') {
         res.status(400).send({ message: `Данные не валидны: ${err.message}` });
@@ -66,7 +72,13 @@ module.exports.updateUserAvatar = (req, res) => {
     upsert: false,
   })
     .orFail(() => { })
-    .then((user) => res.send({ data: user }))
+    .then((user) => {
+      if (user.id === req.user._id) {
+        res.send({ data: user });
+      } else {
+        res.status(400).send({ message: 'Недостаточно прав для этого действия' });
+      }
+    })
     .catch((err) => {
       if (err.name === 'ValidationError') {
         res.status(400).send({ message: `Данные не валидны: ${err.message}` });
