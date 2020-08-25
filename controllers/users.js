@@ -21,21 +21,33 @@ module.exports.getUser = (req, res) => {
 };
 module.exports.createUser = (req, res) => {
   const {
-    name, about, avatar, email,
+    name, about, avatar, email, password,
   } = req.body;
-  bcrypt.hash(req.body.password, 10)
-    .then((hash) => {
-      User.create({
-        name, about, avatar, email, password: hash,
+  if (!password || password.length < 8) {
+    res.status(400).send({ message: 'Пароль должен содержать не меньше 8 символов' });
+  } else {
+    bcrypt.hash(password, 10)
+      .then((hash) => {
+        User.create({
+          name, about, avatar, email, password: hash,
+        })
+          .then((user) => res.send({
+            _id: user._id,
+            name: user.name,
+            about: user.about,
+            avatar: user.avatar,
+            email: user.email,
+          }))
+          .catch((err) => {
+            if (err.name === 'ValidationError') {
+              res.status(400).send({ message: `Данные не валидны: ${err.message}` });
+            } else if (err.name === 'MongoError') {
+              res.status(400).send({ message: 'Пользователь с таким email уже существует' });
+            } else { res.status(500).send({ message: 'Ошибка сервера' }); }
+          });
       })
-        .then((user) => res.send({ data: user }))
-        .catch((err) => {
-          if (err.name === 'ValidationError') {
-            res.status(400).send({ message: `Данные не валидны: ${err.message}` });
-          } else { res.status(500).send({ message: 'Ошибка сервера' }); }
-        });
-    })
-    .catch((err) => { res.status(500).send({ message: err.message }); });
+      .catch(() => { res.status(500).send({ message: 'Ошибка сервера' }); });
+  }
 };
 
 module.exports.updateUserProfile = (req, res) => {
