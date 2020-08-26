@@ -33,7 +33,7 @@ module.exports.deleteCard = (req, res) => {
             res.send({ data: card });
           })
           .catch(() => res.status(500).send({ message: 'Ошибка сервера' }));
-      } else { res.status(401).send({ message: 'Недостаточно прав для этого действия' }); }
+      } else { res.status(403).send({ message: 'Недостаточно прав для этого действия' }); }
     })
     .catch((err) => {
       if (err.name === 'DocumentNotFoundError') {

@@ -1,6 +1,15 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const PasswordValidator = require('password-validator');
 const User = require('../models/user');
+
+const passValid = new PasswordValidator();
+passValid
+  .is().min(8)
+  .is().max(100)
+  .has()
+  .not()
+  .spaces();
 
 module.exports.getUsers = (req, res) => {
   User.find({})
@@ -23,8 +32,8 @@ module.exports.createUser = (req, res) => {
   const {
     name, about, avatar, email, password,
   } = req.body;
-  if (!password || password.length < 8) {
-    res.status(400).send({ message: 'Пароль должен содержать не меньше 8 символов' });
+  if (!passValid.validate(password)) {
+    res.status(400).send({ message: 'Пароль должен содержать не менее 8 символов' });
   } else {
     bcrypt.hash(password, 10)
       .then((hash) => {
@@ -41,8 +50,8 @@ module.exports.createUser = (req, res) => {
           .catch((err) => {
             if (err.name === 'ValidationError') {
               res.status(400).send({ message: `Данные не валидны: ${err.message}` });
-            } else if (err.name === 'MongoError') {
-              res.status(400).send({ message: 'Пользователь с таким email уже существует' });
+            } else if (err.name === 'MongoError' && err.code === 11000) {
+              res.status(409).send({ message: 'Пользователь с таким email уже существует' });
             } else { res.status(500).send({ message: 'Ошибка сервера' }); }
           });
       })
@@ -62,7 +71,7 @@ module.exports.updateUserProfile = (req, res) => {
       if (user.id === req.user._id) {
         res.send({ data: user });
       } else {
-        res.status(400).send({ message: 'Недостаточно прав для этого действия' });
+        res.status(403).send({ message: 'Недостаточно прав для этого действия' });
       }
     })
     .catch((err) => {
@@ -88,7 +97,7 @@ module.exports.updateUserAvatar = (req, res) => {
       if (user.id === req.user._id) {
         res.send({ data: user });
       } else {
-        res.status(400).send({ message: 'Недостаточно прав для этого действия' });
+        res.status(403).send({ message: 'Недостаточно прав для этого действия' });
       }
     })
     .catch((err) => {
